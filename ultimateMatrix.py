@@ -2,26 +2,75 @@
 file: ultimateMatrix.py
 Author: Hank Wu 30 Oct 2021
 """
-from math import pi
+from math import pi, floor, ceil
 from sympy import Matrix, Number, factor, trigsimp, simplify, sympify, nsimplify, pretty, Eq, nsolve, eye
 from typing import List
+
 
 
 def round_expr(expr, num_digits):
     return expr.xreplace({n : round(n, num_digits) for n in expr.atoms(Number)})
 
+def matrix_printf(m: Matrix, title = "Matrix", padding = 3, pre_padding = "", print_by_row_thresh = 150, precision = 4) -> str:
+    print_by_row = False
+    #get the dimention.
+    num_rows, num_cols = m.shape
+    #get the list of strings
+    m_strings = []
+    for i in range(num_rows):
+        for j in range(num_cols):
+            k = simplify(m[i,j])
+            k = factor(k)
+            k = trigsimp(k)
+            k = nsimplify(k, rational = True)
+            k = round_expr(k, precision)
+            k = pretty(k)
+            m_strings.append(k)
+
+    # calculate the width for each column and decide to print by row or not.
+    col_widths = [0] * num_cols
+    for i in range(num_rows):
+        for j in range(num_cols):
+            string = m_strings[i*num_cols + j]
+            if len(string) > col_widths[j]:
+                col_widths[j] = len(string) + padding
+
+    #check if the lenth is exceed print by row thresh
+    total_len = sum(col_widths)
+    if total_len > print_by_row_thresh:
+        print_by_row = True
+
+    # generate the string
+    if print_by_row:
+        ret_string = "\n"
+        ret_string += "_" * floor(max(col_widths)/2 - len(title)) + title + "_" * ceil(max(col_widths)/2 - padding)
+        ret_string += "\n"
+        for i in range(num_rows):
+            ret_string += "\n"
+            for j in range(num_cols):
+                this_str = m_strings[i*num_cols + j]
+                ret_string += f"row{i}, col{j}: {this_str}" + "\n"
+        ret_string += "_" * (max(col_widths)-padding)
+        ret_string += "\n"
+    else:
+        ret_string = "\n"
+        ret_string += pre_padding + "_" * floor(total_len/2 - len(title)) + title + "_" * ceil(total_len/2 - padding)
+        ret_string += "\n"
+        for i in range(num_rows):
+            ret_string += "\n"
+            for j in range(num_cols):
+                this_str = m_strings[i*num_cols + j]
+                ret_string += pre_padding + f"{this_str}" + " "*(col_widths[j] - len(this_str))
+        ret_string += "\n"
+        ret_string += pre_padding + "_" * (total_len - padding)
+        ret_string += "\n"
+    
+    return ret_string
+
 def matrix_printf3x1(m: Matrix) -> str:
-    mystr = "\n\t\t\t--vector--\n"
-    for i in m:
-        k = simplify(i)
-        k = factor(k)
-        k = trigsimp(k)
-        k = nsimplify(k, rational = True)
-        k = round_expr(k, 4)
-        k = pretty(k)
-        mystr += f"\t\t\t{k}\n"
-    mystr += "\t\t\t----------\n"
+    mystr = matrix_printf(m, title="vector", pre_padding="\t\t\t")
     return mystr
+
 
 class tMatrix():
     """transformation matrix generator"""
@@ -34,79 +83,8 @@ class tMatrix():
         pass
 
     def __str__(self) -> str:
-        my_str = ""
-        strings = []
-        padding = 5
-        min_col_width = 0
-        col_widths = []
-        print_by_row = False
-        print_by_row_thresh = 150
-        for i in range(4):
-            for j in range(4):
-                m = simplify(self.my_T[i,j])
-                m = factor(m)
-                m = trigsimp(m)
-                m = nsimplify(m, rational = True)
-                m = round_expr(m, self.precision)
-                m = pretty(m)
-                #m = N(m, 4)
-                this_str = f"{m}"
-                strings.append(this_str)
-                
-        max_string_num = 0
-        for i in range(4):
-            for j in range(4):
-                this_str  = strings[j * 4 + i]
-                if len(this_str) > max_string_num:
-                    max_string_num = len(this_str)
-            if max_string_num < min_col_width:
-                max_string_num = min_col_width
-            col_widths.append(max_string_num+padding)
-            max_string_num = 0
+        return matrix_printf(self.my_T, precision = self.precision)
 
-        
-
-        for i in range(4):
-            for j in range(4):
-                this_str  += strings[i * 4 + j]
-            if len(this_str) > max_string_num:
-                max_string_num = len(this_str) + padding * 4
-            this_str = ""
-
-        if max_string_num > print_by_row_thresh:
-            print_by_row = True
-            max_string_num = 50
-
-        if print_by_row:
-            my_str += "_"*int(max_string_num/2 - 4) + "_uMatrix" + "_"*int(max_string_num/2 - 4) + "_"*10
-        else:
-            my_str += "_"*int(max_string_num/2 - 4) + "_uMatrix" + "_"*int(max_string_num/2 - 4)
-        my_str += "\n\n"
-        
-        for i in range(4):
-            for j in range(4):
-                if print_by_row:
-                    this_str  = strings[i * 4 + j]
-                    my_str += f"row {i}, col{j}: {this_str}\n"
-                else:
-                    this_str  = strings[i * 4 + j]
-                    len_diff = col_widths[j] - len(this_str)
-                    my_str += this_str
-                    for k in range(len_diff):
-                        my_str += " "
-                    # my_str += "\t"
-            my_str += "\n"
-
-        if print_by_row:
-            my_str += "_" * max_string_num + "_"*10
-        else:
-            my_str += "_" * max_string_num
-
-        my_str += "\n"
-
-        return my_str
-
-    
     def __mul__(self, other: 'tMatrix') -> 'tMatrix':
         retval = tMatrix(0,0,0,0)
         retval.my_T = self.my_T * other.my_T
@@ -177,25 +155,15 @@ class tMatrix():
 
     def ik(self, target) -> dict:
         eqs = []
-        syms = []
-        init_guess = []
+        # extract non-trivial equations.
         for i in range(4):
             for j in range(4):
-                # print(f"{i} {j} :{self.my_T[i, j].is_real}")
                 if self.my_T[i, j].is_real:
                     pass
                 else:
                     eq = Eq(self.my_T[i, j], target[i][j])
-                    a = self.my_T[i, j].free_symbols
-                    b = []
-                    for k in a:
-                        b.append(k)
-                    syms.append(b)
-                    # print(eq)
                     eqs.append(eq)
-                    init_guess.append(0.5)
-        # print(eqs[2])
-        # print(self.my_symbles)
+
         num_syms = len(self.my_symbles)
         init_guess = []
         for i in range(num_syms):
@@ -207,7 +175,7 @@ class tMatrix():
         return retval
 
 
-def jacobian_god_function(t_matrices_list: List[tMatrix], is_prismatic_list: List[bool], spacing = 30) -> None:
+def jacobian_god_function(t_matrices_list: List[tMatrix], is_prismatic_list: List[bool], spacing = 30, verbose = True) -> tMatrix:
     T_n_from_0 = eye(4)
     for i in range(len(t_matrices_list)):
         T_n_from_0 = T_n_from_0 * t_matrices_list[i].my_T
@@ -234,7 +202,7 @@ def jacobian_god_function(t_matrices_list: List[tMatrix], is_prismatic_list: Lis
         else:
             col_i = [z_cross_r.row(0), z_cross_r.row(1), z_cross_r.row(2), Z_i_from_0.row(0), Z_i_from_0.row(1), Z_i_from_0.row(2)]
 
-        if True:  # for debug
+        if verbose:  # for debug
             hank = tMatrix(0,0,0,0)
             hank.my_T = T_i_from_0
             print('i = ', i, '_' * 90)
@@ -253,19 +221,9 @@ def jacobian_god_function(t_matrices_list: List[tMatrix], is_prismatic_list: Lis
     jacobian = nsimplify(jacobian, rational = True)
     jacobian = round_expr(jacobian, 4)
     jacobian = factor(jacobian)
-
-    
-    print('=' * 100)
-    print('JACOBIAN BELOW')
-    print('=' * 100)
-
-    for i in range(jacobian.shape[0]):
-        line_parts = []
-        for j in range(jacobian.shape[1]):
-            m = jacobian[i,j]
-            m = simplify(m)
-            line_parts.append(pretty(m).ljust(spacing))
-        print(' | '.join(line_parts))
+    retval = tMatrix(0,0,0,0)
+    retval.my_T = jacobian
+    return retval
 
 
 
@@ -274,60 +232,31 @@ def jacobian_god_function(t_matrices_list: List[tMatrix], is_prismatic_list: Lis
 
 
 if __name__ == "__main__":
-    # print("2020 Exam")
-    # t1 = tMatrix(45, 0, 0, 250)
-    # t2 = tMatrix(-45, 0, 0, 400)
-    # t3 = tMatrix(0, 100, 0, 0)
-    # t4 = tMatrix(45, 0, 0, 0)
-    # overall = t1*t2*t3*t4
-    # print(overall)
 
-    # theta = "th1"
-    # d = 0
-    # alpha = 90
-    # a = "L1"
-    # h = tMatrix(theta, d, alpha, a)
-    # print(h)
-
-    # t1 = tMatrix("th1", "L1", 90, 0)
-    # t2 = tMatrix("th2", 0, -90, 0)
-    # t3 = tMatrix("th3", "L2", 0, 0)
-
-    # print(t1)
-    # print(t2)
-    # print(t3)
-    # print(t1*t2*t3)
-
-    # t1 = tMatrix("Hank", 0, 0, 250)
-    # t2 = tMatrix("Jeff", 0, 0, 400)
-    # t3 = tMatrix(0, "Henry", 0, 0)
-    # t4 = tMatrix("Zach", 0, 0, 0)
-    # print(t1)
-    # print(t2)
-    # print(t3)
-    # print(t4)
-
-    # overall = t1*t2*t3*t4
-    # print(overall)
-
-    print("2019 Exam Q2")
-    t1 = tMatrix("theta1", 1, 90, 0)
-    t2 = tMatrix("theta2", 0,0,1)
-    t3 = tMatrix("theta3", 0,0,0)
-    t4 = tMatrix(0,0,0,"L3")
-    overall = t1*t2*t3*t4
-    print(t1)
-    print(t2)
-    print(t3)
-    print(overall)
-
-    print("2019 Exam Q2b")
-    t0 = tMatrix(0, 0, 0, 0)
-    t1 = tMatrix("theta1", 1, 90, 0)
-    t2 = tMatrix("theta2", 0,0,1)
-    t3 = tMatrix("theta3", 0,0,0)
+    # t1 = tMatrix("theta1", 1, 90, 0)
+    # t2 = tMatrix("theta2", 0,0,1)
+    # t3 = tMatrix("theta3", 0,0,0)
     # t4 = tMatrix(0,0,0,"L3")
-    overall = t1*t2*t3
-    print(overall)
+    # overall = t1*t2*t3*t4
 
-    jacobian = jacobian_god_function([t0, t1, t2, t3], (False, False, False))
+    # testm = overall.my_T
+    # print(overall)
+    t1 = tMatrix("theta1", 1, 90 ,0)
+    t2 = tMatrix("theta2", 0, 0 , 1)
+    t3 = tMatrix("theta3", 0, 0, 0)
+    t4 = tMatrix(0, 0, 0, 0.5)
+    fk: tMatrix = t1*t2*t3*t4
+
+    target = [
+    [0.612,     -0.354,     0.707 ,     0.806],     
+    [0.612,     -0.354,     -0.707,     0.806],     
+    [0.500,     0.866 ,     0.0   ,     1.957],     
+    [0    ,     0     ,     0     ,     1    ]]
+
+    ik = fk.ik(target)
+    for key in ik:
+        if f"{key}".find("theta") == -1:
+            print(f"{key} = {ik[key]:.2f}")
+        else:
+            print(f"{key} = {ik[key]*180/pi:.2f}")
+
