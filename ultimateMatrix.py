@@ -199,7 +199,7 @@ class tMatrix():
         num_syms = len(self.my_symbles)
         init_guess = []
         for i in range(num_syms):
-            init_guess.append(0.5)
+            init_guess.append(1)
         results = nsolve(eqs, self.my_symbles, init_guess, verify = False)
         retval = {}
         for i, result in enumerate(results):
