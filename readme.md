@@ -1,6 +1,6 @@
-# Ultimate matrix
+# Ultimate matrix for DH Parameter
 
-If you want someone to be added to the repo please pm hank~
+If you want someone to be added to the repo please pm Hank~
 
 Contributors:
 
@@ -11,7 +11,7 @@ Please share your useful python tools for tackling the exam!
 
 use `ctrl+shift+b` in vscode to auto-configure the python environment.(tested on MacOS)
 
-The altimate matrix convert DH parameters into a manipulatable matrix!!! 
+The ultimate matrix convert DH parameters into a manipulatable matrix like this!!! 
 
 ```python
 from ultimateMatrix import tMatrix
@@ -171,6 +171,7 @@ theta3 = -14.98
 
 credit: Sam Hogan
 
+`jacobian_god_function` prints all the vetors and matrices you need to assemble a jacobian matrix.
 
 ```python
 print("2019 Exam Q2b")
@@ -185,6 +186,7 @@ print(overall)
 jacobian = jacobian_god_function([t0, t1, t2, t3], (False, False, False))
 ```
 
+result:
 
 ```bash
 2019 Exam Q2b
